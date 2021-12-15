@@ -199,6 +199,25 @@
 <p>​            配置环境变量</p>
 <p>​                1.在系统环境变量中配置NODE_PATH:D:\nodejs\node_global\node_modules</p>
 <p>​                2.在用户环境变量中将nodejs自动配置的环境变量更改为D:\nodejs\node_global</p>
+<p>2.配置淘宝镜像（这一步也可以跳过）</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ npm install -g cnpm --registry=https://registry.npm.taobao.org</span><br></pre></td></tr></table></figure>
+
+<p>3.使用cnpm 安装hexo客户端</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ cnpm install -g hexo</span><br><span class="line"><span class="comment"># 没有配置淘宝镜像,执行下面的操作</span></span><br><span class="line">$ npm install -g hexo</span><br><span class="line"></span><br><span class="line"><span class="comment"># 可以使用以下命令来测试是否安装成功</span></span><br><span class="line">$ hexo -v</span><br></pre></td></tr></table></figure>
+
+<p>4.在电脑上创建一个专门的文件夹用来管理</p>
+<p>使用命令行切换到该目录下</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo init</span><br></pre></td></tr></table></figure>
+
+<p>执行完该操作后，会自动在当前文件夹下创建搭建博客需要的文件</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">source:</span> <span class="string">博客的根目录（可以在配置文件中更改）</span></span><br><span class="line"><span class="attr">themes:</span> <span class="string">博客的主题放在该文件夹下（可以在github上拉取）</span></span><br><span class="line"><span class="attr">_config:</span> <span class="string">博客的配置文件（可以更改配置文件达到个性化的操作）</span></span><br></pre></td></tr></table></figure>
+
+<p>5.启动本地的博客服务</p>
+<p>开启后可以在本地浏览器查看博客内容</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#在更改过配置或博客内容后，执行一下操作</span></span><br><span class="line"><span class="comment">#清理一下缓存</span></span><br><span class="line">$ hexo clean</span><br><span class="line"><span class="comment">#生成</span></span><br><span class="line">$ hexo g</span><br><span class="line"><span class="comment">#启动服务</span></span><br><span class="line">$ hexo s</span><br></pre></td></tr></table></figure>
+
+<p>6.查看</p>
+<p>在浏览器地址栏输入 <a target="_blank" rel="noopener" href="https://localhost:4000/">https://localhost:4000</a></p>
 
       
 
