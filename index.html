@@ -167,6 +167,239 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-openstack搭建云服务器" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2021/12/18/openstack%E6%90%AD%E5%BB%BA%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/">openstack搭建云服务器（双节点）</a>
+    </h1>
+  
+
+        
+        <a href="/2021/12/18/openstack%E6%90%AD%E5%BB%BA%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" class="archive-article-date">
+  	<time datetime="2021-12-18T12:31:08.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2021-12-18</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="云计算-搭建云服务器"><a href="#云计算-搭建云服务器" class="headerlink" title="云计算-搭建云服务器"></a>云计算-搭建云服务器</h3><p>1.环境准备</p>
+<p>安装VMware，安装SecureCRT、SecureFX</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">VMware:</span> <span class="string">用来安装虚拟机</span></span><br><span class="line"><span class="attr">SecureCRT:</span> <span class="string">用来连接虚拟机，可以更好的操作（可以更方便的操作虚拟机）</span></span><br><span class="line"><span class="attr">SecureFX:</span> <span class="string">连接好虚拟机后可以用来在主机与虚拟机之间传输文件</span></span><br></pre></td></tr></table></figure>
+
+<p>2.搭建环境</p>
+<p>VMware网络环境配置（编辑–虚拟网络编辑器–更改设置）</p>
+<p>将主机模式的网卡设置为100网段</p>
+<p>将NAT模式的网卡设置为200网段</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">host:</span> <span class="number">192.168</span><span class="number">.100</span><span class="number">.0</span></span><br><span class="line"><span class="comment"># dhcp设置</span></span><br><span class="line"><span class="attr">DHCP:</span></span><br><span class="line">	<span class="attr">start:</span> <span class="number">192.168</span><span class="number">.100</span><span class="number">.1</span></span><br><span class="line">	<span class="attr">end:</span> <span class="number">192.168</span><span class="number">.100</span><span class="number">.254</span></span><br><span class="line"><span class="attr">NAT:</span> <span class="number">192.168</span><span class="number">.200</span><span class="number">.0</span></span><br><span class="line"><span class="attr">DHCP:</span></span><br><span class="line">	<span class="attr">start:</span> <span class="number">192.168</span><span class="number">.200</span><span class="number">.1</span></span><br><span class="line">	<span class="attr">end:</span> <span class="number">192.168</span><span class="number">.200</span><span class="number">.254</span></span><br><span class="line"><span class="comment"># 注意还要将NET的网关设置好,因为192.168.200.1已经占用了（主机占用了）</span></span><br><span class="line"><span class="attr">geteway:</span> <span class="number">192.168</span><span class="number">.200</span><span class="number">.2</span></span><br></pre></td></tr></table></figure>
+
+
+
+<p>新建虚拟机</p>
+<p>配置两个虚拟机，推荐配置</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 控制节点</span></span><br><span class="line"><span class="attr">controller:</span></span><br><span class="line">	<span class="comment">#可以根据自己的电脑配置</span></span><br><span class="line">	<span class="string">内存:</span> <span class="string">4G</span></span><br><span class="line">	<span class="string">磁盘容量:</span> <span class="string">40G</span></span><br><span class="line">	<span class="string">两个网卡:</span></span><br><span class="line">		<span class="string">默认的网卡:</span> <span class="string">host模式</span></span><br><span class="line">		<span class="string">新建的网卡:</span> <span class="string">NAT模式</span></span><br><span class="line">	<span class="comment">#注意在处理器中将虚拟化勾选上（因为我们会在云服务器上再创建虚拟机）</span></span><br></pre></td></tr></table></figure>
+
+<p>安装controller节点</p>
+<p>在install界面按住tab键，在quite前面输入 net.ifnames=0 biosdevname=0  回车进行安装（为了将虚拟机的两张网卡设置为eth0和eth1）</p>
+<p>配置controller网络</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 配置ipv4地址，将自动改为手动</span></span><br><span class="line"><span class="comment">#主机模式</span></span><br><span class="line"><span class="attr">eth0:</span> </span><br><span class="line">	<span class="attr">ip:</span> <span class="number">192.168</span><span class="number">.100</span><span class="number">.10</span></span><br><span class="line">	<span class="attr">Netmask:</span> <span class="number">24</span></span><br><span class="line">	<span class="attr">Geteway:</span>     <span class="comment">#不需要</span></span><br><span class="line"><span class="comment">#net模式需要与外界通信</span></span><br><span class="line"><span class="attr">eth1:</span></span><br><span class="line">	<span class="attr">ip:</span> <span class="number">192.168</span><span class="number">.200</span><span class="number">.10</span></span><br><span class="line">	<span class="attr">Netmask:</span> <span class="number">24</span></span><br><span class="line">	<span class="attr">Geteway:</span> <span class="number">198.168</span><span class="number">.200</span><span class="number">.2</span></span><br><span class="line">	<span class="attr">DNS:</span> <span class="number">114.114</span><span class="number">.114</span><span class="number">.114</span></span><br></pre></td></tr></table></figure>
+
+<p>​    修改网卡配置文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 打开配置文件</span></span><br><span class="line">$ vi /etc/sysconfig/network-srcipts/eth0</span><br><span class="line"><span class="comment"># 修改BOOTROTO=static,ONBOOT=yes</span></span><br><span class="line">$ vi /etc/sysconfig/network-srcipts/eth1</span><br></pre></td></tr></table></figure>
+
+<p>关闭防火墙</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ systemctl stop firewalld</span><br><span class="line">$ systemctl <span class="built_in">disable</span> firewalld</span><br></pre></td></tr></table></figure>
+
+<p>关闭setenforce和selinux</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ setenforce 0</span><br><span class="line">$ vi /etc/selinux/config/</span><br><span class="line"><span class="comment"># 修改SELINUX=permissive</span></span><br></pre></td></tr></table></figure>
+
+<p>重启网络</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ systemctl restart network</span><br></pre></td></tr></table></figure>
+
+<p>使用SecureCRT连接虚拟机</p>
+<p>使用快速连接</p>
+<p>创建compute节点</p>
+<p>推荐直接克隆controller节点，在修改（也可以在慢慢创建一个）</p>
+<p>我这里使用直接克隆(选择全部克隆)</p>
+<p>更改配置</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">虚拟机名字:</span> <span class="string">compute</span></span><br><span class="line"><span class="attr">UUID:</span> <span class="string">改动一下</span></span><br><span class="line"><span class="attr">eth0:</span> <span class="number">192.168</span><span class="number">.100</span><span class="number">.20</span></span><br><span class="line"><span class="attr">eth1:</span> <span class="number">192.168</span><span class="number">.200</span><span class="number">.20</span></span><br></pre></td></tr></table></figure>
+
+<p>重启一下网络，就可以使用SecureCRT连接了</p>
+<p>之后的操作就在SecureCRT中执行</p>
+<p>更改主机名（为了更好的分辨）</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ hostnamectl set-hostname 主机名</span><br><span class="line"><span class="comment"># 100.10：controller  100.20：compute </span></span><br><span class="line"><span class="comment"># 设置完主机名后需要退出一下才会生效 </span></span><br><span class="line">$ <span class="built_in">logout</span></span><br></pre></td></tr></table></figure>
+
+<p>设置虚拟机之间的映射关系</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ vi /etc/hosts</span><br><span class="line"><span class="comment"># 添加映射关系 ip 主机名 (两个虚拟机都需设置)</span></span><br><span class="line">192.168.100.10 controller</span><br><span class="line">192.168.100.20 compute</span><br></pre></td></tr></table></figure>
+
+<p>检查配置是否设置成功,两个主机之间相互ping一下也可ping一下外网</p>
+<p>设置本地仓库</p>
+<p>在controller选项卡下打开SecureFX，将Centos和XianDian的镜像文件拖拽到虚拟机中，等待传输完成</p>
+<p>controller：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 切换到yum.repos.d/目录下</span></span><br><span class="line">$ <span class="built_in">cd</span> /etc/yum.repos.d/</span><br><span class="line"><span class="comment">#将该目录下的文件全部移到 自己新建的文件夹中</span></span><br><span class="line">$ mv * /media/</span><br><span class="line"><span class="comment">#在当前目录下创建一个本地的yum源</span></span><br><span class="line">$ vi local.repo</span><br><span class="line">[centos]</span><br><span class="line">name=centos <span class="comment">#名字自取</span></span><br><span class="line">baseurl=file:///opt/centos</span><br><span class="line">gpgchech=0</span><br><span class="line">enabled=1</span><br><span class="line">[openstack]</span><br><span class="line">name=centos <span class="comment">#名字自取</span></span><br><span class="line">baseurl=file:///opt/openstack/iaas-repo</span><br><span class="line">gpgchech=0</span><br><span class="line">enabled=1</span><br></pre></td></tr></table></figure>
+
+<p>挂载镜像</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mkdir /opt/centos</span><br><span class="line">$ mount -o loop /root/CenOS-xxxx.iso /opt/centos/</span><br><span class="line">mkdir /opt/openstack</span><br><span class="line">$ mount -o loop /root/XianDian-xxxx.iso /opt/openstack/</span><br><span class="line"></span><br><span class="line">$ yum clean all</span><br><span class="line">$ yum repolist <span class="comment"># 查看本地源</span></span><br></pre></td></tr></table></figure>
+
+<p>安装、配置vsftpd</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ yum install -y vsftpd</span><br><span class="line"><span class="comment">#配置</span></span><br><span class="line">$ vi /etc/vsftpd/vsftpd.conf</span><br><span class="line"><span class="comment">#配置匿名访问的根目录</span></span><br><span class="line">anon_root=/opt</span><br><span class="line"><span class="comment"># 重新启动和开机自启</span></span><br><span class="line">$ systemctl restart vsftpd</span><br><span class="line">$ systemctl <span class="built_in">enable</span> vsftpd</span><br></pre></td></tr></table></figure>
+
+<p>compute：</p>
+<p>切换到yum.repos.d目录下，将该目录下的内容移动到 /media/文件夹中</p>
+<p>创建本地源 ftp.repo</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">name=centos <span class="comment">#名字自取</span></span><br><span class="line">baseurl=ftp://controller/centos</span><br><span class="line">gpgchech=0</span><br><span class="line">enabled=1</span><br><span class="line">[openstack]</span><br><span class="line">name=centos <span class="comment">#名字自取</span></span><br><span class="line">baseurl=ftp://controller/openstack/iaas-repo</span><br><span class="line">gpgchech=0</span><br><span class="line">enabled=1</span><br><span class="line"></span><br><span class="line"><span class="comment">#查看yum包</span></span><br><span class="line">$ yum clean all</span><br><span class="line">$ yum repolist</span><br></pre></td></tr></table></figure>
+
+<p>controller：</p>
+<p>安装时间同步器chrony</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ yum install -y chrony</span><br></pre></td></tr></table></figure>
+
+<p>配置</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ vi /etc/chrony.conf</span><br><span class="line"><span class="comment"># 将原本的server全部注释掉</span></span><br><span class="line"><span class="comment"># 配置自己的server</span></span><br><span class="line">server controller iburst</span><br><span class="line"><span class="comment"># 配置允许的网段</span></span><br><span class="line">allow 192.168.100.0/24</span><br><span class="line"></span><br><span class="line"><span class="comment">#重启与开机自启</span></span><br><span class="line">$ systemctl restart chronyd</span><br><span class="line">$ systemctl <span class="built_in">enable</span> chronyd</span><br></pre></td></tr></table></figure>
+
+<p>compute：</p>
+<p>安装chrony</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ yum install -y chrony</span><br></pre></td></tr></table></figure>
+
+<p>配置</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ vi /etc/chrony.conf</span><br><span class="line"><span class="comment"># 将原本的server全部注释掉</span></span><br><span class="line"><span class="comment"># 配置自己的server</span></span><br><span class="line">server controller</span><br><span class="line"><span class="comment">#重启与开机自启</span></span><br><span class="line">$ systemctl restart chronyd</span><br><span class="line">$ systemctl <span class="built_in">enable</span> chronyd</span><br></pre></td></tr></table></figure>
+
+<p>测试</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ chronyc <span class="built_in">source</span> -v</span><br></pre></td></tr></table></figure>
+
+
+
+<p>3.搭建openstack</p>
+<p>安装iaas-xiandian(两个主机都需要安装)</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ yum install -y iaas-xiandian</span><br></pre></td></tr></table></figure>
+
+<p>配置</p>
+<p>controller：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ vi /etc/xiandian/openrc.sh</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">HOST_IP:</span> <span class="number">192.168</span><span class="number">.100</span><span class="number">.10</span>  <span class="comment"># controller ip</span></span><br><span class="line"><span class="attr">HOST_NAME:</span> <span class="string">controller</span>  <span class="comment">#controller名字</span></span><br><span class="line"><span class="attr">HOST_IP_NODE:</span> <span class="number">192.168</span><span class="number">.100</span><span class="number">.20</span> <span class="comment">#compute ip</span></span><br><span class="line"><span class="attr">HOST_NAME_NODE:</span> <span class="string">compute</span></span><br><span class="line"><span class="attr">network_segment_IP:</span> <span class="number">192.168</span><span class="number">.100</span><span class="number">.0</span><span class="string">/24</span></span><br><span class="line"><span class="attr">DOMAIN_NAME:</span> <span class="string">zhangsan</span> <span class="comment"># 域名名字，用来登录openstack</span></span><br><span class="line"><span class="attr">INTERFACE_IP:</span> <span class="number">192.168</span><span class="number">.100</span><span class="number">.10</span></span><br><span class="line"><span class="attr">INTERFACE_NAME:</span> <span class="string">eth1</span> <span class="comment">#第二张网卡的名字</span></span><br><span class="line"><span class="attr">BLOCK_DISK:</span> <span class="string">sdb1</span></span><br><span class="line"><span class="attr">OBJECT_DISK:</span> <span class="string">sdb2</span></span><br><span class="line"><span class="attr">STORAGE_LOCAL_NET_IP:</span> <span class="number">192.168</span><span class="number">.100</span><span class="number">.20</span> <span class="comment">#计算节点的ip</span></span><br><span class="line"><span class="comment"># 没有说明的参数都给默认值就行</span></span><br></pre></td></tr></table></figure>
+
+<p>compute：</p>
+<p>在controller中将配置文件拷贝到compute节点中</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ scp /etc/xiandian/openrc.sh compute://etc/xiandian</span><br></pre></td></tr></table></figure>
+
+<p>修改配置  INTERFACE_IP: 192.168.100.20</p>
+<p>将配置生效（两个主机都需要配置）</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">source</span> /etc/xiandian/openrc.sh</span><br></pre></td></tr></table></figure>
+
+<p>4.openstack组件安装（安装时建议断网安装，这样就使用的是本地的资源）</p>
+<p>compute和controller都安装iaas-pre-host.sh</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ iaas-pre-host.sh</span><br><span class="line"></span><br><span class="line"><span class="comment">#安装完成后根据提示重启一下</span></span><br></pre></td></tr></table></figure>
+
+
+
+<p>安装controller</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ iaas-install-mysql.sh  <span class="comment"># mysql</span></span><br><span class="line">$ iaas-install-keystone.sh  <span class="comment"># keystone</span></span><br><span class="line">$ iaas-install-glance.sh   <span class="comment"># glance</span></span><br></pre></td></tr></table></figure>
+
+<p>controller和 compute切换安装</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在controller中安装nova（）</span></span><br><span class="line">$ iaas-install-nova-controller.sh</span><br><span class="line"><span class="comment"># 在compute中安装nova（等待controller安装完成后进行安装）</span></span><br><span class="line">$ iaas-install-nova-compute.sh</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在controller中安装neutron</span></span><br><span class="line">$ iaas-install-neutron-controller.sh</span><br><span class="line"><span class="comment"># 在compute中安装neutron</span></span><br><span class="line">$ iaas-install-neutron-compute.sh</span><br></pre></td></tr></table></figure>
+
+<p>在全部安装完成后，在controller中安装dashboard</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ iaas-install-dashboard.sh</span><br></pre></td></tr></table></figure>
+
+<p>安装完成后就可以通过<a target="_blank" rel="noopener" href="http://192.168.100.10/dashboard">http://192.168.100.10/dashboard</a></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">domain:</span> <span class="string">zhangsan</span>   <span class="comment">#DOMAIN_NAME: zhangsan </span></span><br><span class="line"><span class="attr">username:</span> <span class="string">admin</span></span><br><span class="line"><span class="attr">password:</span> <span class="number">000000</span></span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+<h5 id="番外"><a href="#番外" class="headerlink" title="番外"></a>番外</h5><p>创建云主机</p>
+<p>创建源</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">source</span> /etc/keystone/admin-openrc.sh</span><br><span class="line">$ glance image-create --name cirros --disk-format qcow2 --container-format bare --file /opt/openstack/images/CentOS_7.2_x86_64_XD.qcow2 --progress</span><br></pre></td></tr></table></figure>
+
+<p>创建云主机类型（管理员–资源管理–云主机类型–创建云主机类型）</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">name:</span> <span class="string">cloudtest</span>  <span class="comment"># 随便</span></span><br><span class="line"><span class="attr">ID:</span> <span class="string">auto</span></span><br><span class="line"><span class="attr">VCPU:</span> <span class="number">1</span></span><br><span class="line"><span class="string">内存:</span> <span class="number">1024</span></span><br><span class="line"><span class="string">磁盘:</span> <span class="string">10G</span> </span><br></pre></td></tr></table></figure>
+
+<p>创建网络（管理员–网络–网络–创建网络）</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">name:</span>    <span class="comment"># 随便</span></span><br><span class="line"><span class="string">项目:</span> <span class="string">admin</span></span><br><span class="line"><span class="string">网络类型:</span> <span class="string">Flat</span></span><br><span class="line"><span class="string">物理网络:</span> <span class="string">provider</span></span><br></pre></td></tr></table></figure>
+
+<p>创建子网</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">网络地址:</span> <span class="number">192.168</span><span class="number">.200</span><span class="number">.0</span><span class="string">/24</span></span><br><span class="line"><span class="string">网关:</span> <span class="number">192.168</span><span class="number">.200</span><span class="number">.2</span></span><br></pre></td></tr></table></figure>
+
+<p>创建虚拟机内部的网络</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">name:</span>    <span class="comment"># 随便</span></span><br><span class="line"><span class="string">项目:</span> <span class="string">admin</span></span><br><span class="line"><span class="string">网络类型:</span> <span class="string">VXLAN</span></span><br><span class="line"><span class="string">段ID:</span> <span class="number">110</span> <span class="comment">#随便</span></span><br></pre></td></tr></table></figure>
+
+<p>创建子网</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">网络地址:</span> <span class="number">10.10</span><span class="number">.1</span><span class="number">.0</span><span class="string">/24</span></span><br><span class="line"><span class="string">网关:</span> <span class="number">10.10</span><span class="number">.1</span><span class="number">.1</span></span><br></pre></td></tr></table></figure>
+
+
+
+<p>创建路由，用来内网与外网通讯(管理员–网络–路由–新建路由)</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">name:</span> </span><br><span class="line"><span class="string">外部网络:</span> <span class="string">选择之前配置的外部网络</span></span><br></pre></td></tr></table></figure>
+
+<p>新建接口，绑定之前创建的内网</p>
+<p>创建云主机。。。。。</p>
+<h5 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h5><p>如果出现云主机启动时停止在开机页面不动，可能是nova缺少配置（两个节点都需要配置）</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ vi /etc/nova/nova.conf</span><br><span class="line"><span class="comment"># 在[libvirtd下更改 virt_type=qemu</span></span><br><span class="line">在底行模式下输入 /[libvirtd]可以定位</span><br><span class="line"></span><br><span class="line"><span class="comment">#重启一下服务</span></span><br><span class="line">$ systemctl restart opensatck*</span><br></pre></td></tr></table></figure>
+
+<p>云主机访问外网</p>
+<p>项目–资源管理–云主机–分配浮动ip</p>
+<p>项目–资源管理–网络–安全组–添加规则（把所有的规则出口入口都添加上）</p>
+<p>配置域名（在虚拟机中配置）</p>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags icon"></i>
+		<ul class="article-tag-list">
+			 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">notes</a>
+        		</li>
+      		
+		</ul>
+	</div>
+
+      
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2021/12/18/openstack%E6%90%AD%E5%BB%BA%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-我的博客搭建过程" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
